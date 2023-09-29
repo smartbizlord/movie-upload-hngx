@@ -91,8 +91,8 @@ const movieUpload = async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, 'You did not upload any recording');
     } else {
 
-        const movieLocation = `http://localhost:3001/videos/${req.file.filename}`
-        const shareLink = `http://localhost:3001/share/${req.file.filename}`
+        const movieLocation = `https://shiny-newt-outerwear.cyclic.cloud/videos/${req.file.filename}`
+        const shareLink = `https://shiny-newt-outerwear.cyclic.cloud/share/${req.file.filename}`
         const uniqueel = req.file.filename
 
         await dB.videos.create({
