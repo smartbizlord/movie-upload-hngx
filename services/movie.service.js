@@ -2,6 +2,11 @@ const httpStatus = require('http-status');
 const { dB } = require('../models');
 const ApiError = require('../utils/ApiError');
 const fs = require('fs');
+const dotenv = require('dotenv');
+const path = require("path")
+const ffmpeg = require('fluent-ffmpeg');
+
+dotenv.config({ path: path.join(__dirname, '../.env') })
 
 const moviesWithoutAuth = async () => {
         const videos = await dB.videos.find({ isActive: true, })
@@ -91,12 +96,19 @@ const movieUpload = async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, 'You did not upload any recording');
     } else {
 
-        console.log(req.file, "file")
-        console.log(req, "full request")
+        // console.log(req.file, "file")
+        // console.log(req, "full request")
 
-        const movieLocation = `https://movie-upload-hngx.onrender.com/recordings/${req.file.filename}`
-        const shareLink = `https://movie-upload-hngx.onrender.com/share/${req.file.filename}`
+        const movieLocation = `${process.env.BASE_URL}/recordings/${req.file.filename}`
+        const shareLink = `${process.env.BASE_URL}/share/${req.file.filename}`
         const uniqueel = req.file.filename
+        // const uniqueel = req.file.buffer
+        // const transcriptBuff = new Buffer(uniqueel)
+        // const transcript = convertVidToAud(uniqueel)
+
+        // console.log(uniqueel, "\n", "\n", "\n")
+        // console.log(transcriptBuff, "\n", "\n", "\n")
+        // console.log(transcript, "\n", "\n", "\n")
 
         await dB.videos.create({
             movieLocation,
@@ -105,7 +117,63 @@ const movieUpload = async (req, res) => {
             isActive: true,
         })
 
+        // res.send(uniqueel)
+
     }
+}
+
+const convertVidToAud = async(videoBuffer) => {
+
+    console.log(videoBuffer, "videoBuffer")
+  const command = ffmpeg();
+  command.input(videoBuffer)
+    .outputFormat('mp3')
+    .toFormat('wav')
+    .outputOption('-acodec pcm_s16le');
+
+  let base64String = '';
+
+  command.on('data', function(chunk) {
+    base64String += chunk.toString('base64');
+  });
+
+  command.on('end', function() {
+    
+  });
+
+  command.run();
+
+  return await generateTranscription(base64String)
+
+}
+
+const generateTranscription = async(audioBytes) => {
+    const client = new speech.SpeechClient()
+
+    const audio = {
+        content: audioBytes,
+    }
+    const config = {
+        encoding: "Linear16",
+        sampleRateHertz: 16000,
+        languageCode: "en-US",
+    }
+    const request = {
+        audio,
+        config,
+    }
+
+    const [response] = await client.recognize(request)
+
+    const transcription = response?.map((result) => {
+        return result.alternatives[0].transcript
+    }).join("\n")
+
+    return transcription
+}
+
+const workAraound = () => {
+    // 
 }
 
 module.exports = {

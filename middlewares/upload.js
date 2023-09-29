@@ -14,7 +14,7 @@ const pictureStorage = multer.diskStorage({
 
 const movieStorage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, './public/')
+      cb(null, 'public/')
     },
     filename: function (req, file, cb) {
         const mext = file.mimetype.split('/')
@@ -24,6 +24,8 @@ const movieStorage = multer.diskStorage({
       cb(null, nFieldname + '_' + uniqueSuffix + ext)
     }
 })
+
+// const movieStorage = multer.memoryStorage()
 
 
 
@@ -130,6 +132,7 @@ const movieWithThumbNailStorage = multer.diskStorage({
 
 const uploadPicture = multer({ storage: pictureStorage })
 const uploadMovie = multer({ storage: movieStorage, fileFilter: movieFilter, })
+// const uploadMovie = multer({ storage: movieStorage })
 const uploadThumbNail = multer({ storage: thumbNailStorage })
 const uploadMovieWithThumbNail = multer({ storage: movieWithThumbNailStorage, fileFilter: movieWithThumbNailFilter })
 
