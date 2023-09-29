@@ -17,7 +17,7 @@ const movieStream = async (req, res) => {
     
     const {originalUrl, headers, movie} = req;
     const tisMovie = await dB.videos.findOne({_id: movie, isActive: true})
-    if(!tisMovie) { /* res.end() */ }
+    if(!tisMovie) {  res.end()  }
     else { 
     const fileName = tisMovie.uniqueel
     range = headers.range;
@@ -91,8 +91,8 @@ const movieUpload = async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, 'You did not upload any recording');
     } else {
 
-        const movieLocation = `https://shiny-newt-outerwear.cyclic.cloud/videos/${req.file.filename}`
-        const shareLink = `https://shiny-newt-outerwear.cyclic.cloud/share/${req.file.filename}`
+        const movieLocation = `https://movie-upload-hngx.onrender.com/recordings/${req.file.filename}`
+        const shareLink = `https://movie-upload-hngx.onrender.com/share/${req.file.filename}`
         const uniqueel = req.file.filename
 
         await dB.videos.create({
