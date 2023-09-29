@@ -33,11 +33,11 @@ const movieStream = async (req, res) => {
     const maxChunks = 10;
 
     if(!range) {
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'video/mp4');
+        // res.statusCode = 200;
+        // res.setHeader('Content-Type', 'video/mp4');
 
-        fs.createReadStream(videoPath).pipe(res);
-        // res.end()
+        // fs.createReadStream(videoPath).pipe(res);
+        res.end()
     } else {
 
     const positions = range.replace(/bytes=/, '').split('-');
@@ -66,6 +66,27 @@ const movieStream = async (req, res) => {
 
     fs.createReadStream(videoPath, { start, end }).pipe(res);
 }}
+}
+
+
+
+const shareStream = async (req, res) => {
+
+    
+    const {originalUrl, headers, movie} = req;
+    const tisMovie = await dB.videos.findOne({_id: movie, isActive: true})
+    if(!tisMovie) {  res.end()  }
+    else { 
+    const fileName = tisMovie.uniqueel
+
+    const videoPath = `${process.cwd()}/public/${fileName}`;
+
+
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'video/mp4');
+
+        fs.createReadStream(videoPath).pipe(res);
+    }
 }
 
 const movieDownload = async (req, res) => {
@@ -181,4 +202,5 @@ module.exports = {
     movieStream,
     movieDownload,
     movieUpload,
+    shareStream,
 }

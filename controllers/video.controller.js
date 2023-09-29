@@ -28,6 +28,11 @@ const uploadMovies = catchAsync(async (req, res) => {
     });
 })
 
+const shareStream = catchAsync(async (req, res) => {
+    req.movie = req.params?.id;;
+    await movieService.shareStream(req, res)
+})
+
 
 
 
@@ -37,4 +42,5 @@ module.exports = {
     streamMovies,
     downloadMovies,
     uploadMovies,
+    shareStream,
 }
