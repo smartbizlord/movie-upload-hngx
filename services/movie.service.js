@@ -91,7 +91,8 @@ const movieUpload = async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, 'You did not upload any recording');
     } else {
 
-        console.log(req.file)
+        console.log(req.file, "file")
+        console.log(req, "full request")
 
         const movieLocation = `https://movie-upload-hngx.onrender.com/recordings/${req.file.filename}`
         const shareLink = `https://movie-upload-hngx.onrender.com/share/${req.file.filename}`
