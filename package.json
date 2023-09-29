@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "spack && npm run static && npm run prerender",
+    "static": "cp static/* dist",
+    "prerender": "ts-node prerender.ts"
   },
   "keywords": [
     "recording",
