@@ -10,7 +10,41 @@ const xss = require("xss-clean")
 const path = require("path")
 const createError = require("http-errors")
 const ApiError = require("./utils/ApiError")
+const amqp = require('amqplib')
+const openai = require('openai')
 const { errorConverter, errorHandler } = require("./middlewares/error")
+require('dotenv');
+
+
+const queue = 'video_transcription'
+
+let channel;
+// (async function () {
+//     const connection = await amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`);
+//     channel = await connection.createChannel();
+  
+//     await channel.assertQueue(queue, { durable: true });
+//   })()
+
+
+//   channel.consume(queue, async (msg) => {
+//     const videoPath = msg.content.toString();
+  
+//     try {
+//       // Perform video transcription using Whisper API
+//       const transcription = await transcribeVideo(videoPath);
+  
+//       // Save transcription to a file or database
+//       // For example, you can save it in the 'transcriptions' directory
+//       // fs.writeFileSync(`transcriptions/${videoPath}.txt`, transcription);
+  
+//       console.log(`Transcription saved for ${videoPath}`);
+//     } catch (error) {
+//       console.error(`Error transcribing video: ${error.message}`);
+//     }
+  
+//     channel.ack(msg);
+//   })
 
 
 
