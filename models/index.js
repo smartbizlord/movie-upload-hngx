@@ -1,5 +1,5 @@
 const mongoose = require("mongoose")
-const dotenv = require('44');
+const dotenv = require('dotenv');
 const path = require("path")
 const video = require('./video')
 
