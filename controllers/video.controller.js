@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/asyncly');
 const { movieService } = require('../services');
 const ApiError = require('../utils/ApiError');
-const fs = require("fs/promises");
+const fs = require("fs");
 const path = require("path");
 const amqp = require("amqplib")
 require('dotenv');
@@ -38,80 +38,81 @@ const shareStream = catchAsync(async (req, res) => {
     await movieService.shareStream(req, res)
 })
 
-const recordAndSave = async (req, res) => {
-    const chunkIndex = req.body.index;
-    const videoChunk = req.body.data;
-    const recordingId = req.body.recordingId;
-    const hasNextChunk = req.body.hasNextChunk;
+const recordAndSave = catchAsync(async (req, res) => {
+  const chunkIndex = req.body.index;
+  const videoChunk = req.body.data;
+  const recordingId = req.body.recordingId;
+  const hasNextChunk = req.body.hasNextChunk;
 
-    // console.log(req.body, "request body")
+  // console.log(req.body, "request body")
 
-    const tempDir = path.join(process.cwd() + "/temp")
-    const recordingsDir = path.join(process.cwd() + "/public")
+  const tempDir = path.join(process.cwd() + "/temp")
+  const recordingsDir = path.join(process.cwd() + "/public")
 
-    
   
-    const tempFilePath = `${tempDir}/${recordingId}_${chunkIndex}.chunk`;
 
-    if (hasNextChunk !== "true") {
-      // No more chunks expected, send video for transcription
-      const tempFilePaths = await fs.readdir(tempDir).filter(file => file.startsWith(`${recordingId}_`));
-      const chunks = tempFilePaths.map(async(filePath) => {
-        let fileCunkTran = await fs.readFile(`${tempDir}/${filePath}`, "base64")
-        return Buffer.from(
-          fileCunkTran,
-          "base64",
-        )}
-      );
-      const completeRecording = Buffer.concat(chunks);
+  const tempFilePath = `${tempDir}/${recordingId}_${chunkIndex}.chunk`;
 
-      // Save the complete recording
-      const outputFilePath = `${recordingsDir}/${recordingId}.webm`;
-      await fs.writeFile(outputFilePath, completeRecording, 'base64', (err) => {
-        if (err) {
-          return res.status(500).send(err);
-        }
+  if (!hasNextChunk && !videoChunk) {
+    // No more chunks expected, send video for transcription
+    const tempFilePaths = fs.readdirSync(tempDir).filter(file => file.startsWith(`${recordingId}_`));
+    const chunks = tempFilePaths.map((filePath) => fs.readFileSync(`${tempDir}/${filePath}`))
+    // {
+      //   return fs.readFileSync(`${tempDir}/${filePath}`)
+      //   let fileCunkTran = fs.readFileSync(`${tempDir}/${filePath}`, "base64")
+      //   return Buffer.from(
+        //     fileCunkTran,
+        //     "base64",
+        //   )}
+        // );
+        const completeRecording = Buffer.concat(chunks);
+        
+        // Save the complete recording
+        const outputFilePath = `${recordingsDir}/${recordingId}.webm`;
+        fs.writeFile(outputFilePath, completeRecording, 'base64', (err) => {
+          if (err) {
+            return res.status(500).send(err);
+          }
+          console.log("reached here")
 
-        console.log(`Recording saved at ${outputFilePath}`);
+      console.log(`Recording saved at ${outputFilePath}`);
 
-        // Clean up temporary files
-        tempFilePaths.forEach(async(filePath) => await fs.unlink(`${tempDir}/${filePath}`));
+      // Clean up temporary files
+      tempFilePaths.forEach((filePath) => fs.unlinkSync(`${tempDir}/${filePath}`));
 
-        // Connect to RabbitMQ and send video for transcription
-      //   amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`).then((connection) => {
-      //     return connection.createChannel().then((channel) => {
-      //       const queue = 'video_transcription';
+      // Connect to RabbitMQ and send video for transcription
+    //   amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`).then((connection) => {
+    //     return connection.createChannel().then((channel) => {
+    //       const queue = 'video_transcription';
 
-      //       channel.assertQueue(queue, { durable: true });
-      //       channel.sendToQueue(queue, Buffer.from(outputFilePath)); // Send the file path
+    //       channel.assertQueue(queue, { durable: true });
+    //       channel.sendToQueue(queue, Buffer.from(outputFilePath)); // Send the file path
 
-      //       console.log('Sent video for transcription');
+    //       console.log('Sent video for transcription');
 
-      //       setTimeout(() => {
-      //         connection.close();
-      //       }, 500);
-      //     });
-      //   }).catch(console.warn);
+    //       setTimeout(() => {
+    //         connection.close();
+    //       }, 500);
+    //     });
+    //   }).catch(console.warn);
 
-        res.sendStatus(200);
-      });
-    }
-  
-    if (videoChunk) {
-      fs.writeFile(tempFilePath, videoChunk, 'base64', (err) => {
-        if (err) {
-          console.log(err, "there was a problem saving the chunk to disk")
-          return new ApiError(httpStatus.BAD_GATEWAY, "Movie Upload failed");
-        }
-    
-        console.log(`Received and saved chunk ${chunkIndex}`);
-    
-         {
-          res.sendStatus(200);
-        }
-      });
-    }
+      res.sendStatus(200);
+    });
   }
+
+  if (videoChunk && hasNextChunk) {
+    fs.writeFileSync(tempFilePath, videoChunk, 'base64', (err) => {
+      if (err) {
+        console.log(err, "there was a problem saving the chunk to disk")
+        return new ApiError(httpStatus.BAD_GATEWAY, "Movie Upload failed");
+      }
+  
+      console.log(`Received and saved chunk ${chunkIndex}`);
+      res.sendStatus(200)
+    });
+    res.sendStatus(200);
+  }
+})
 
   const initializer = () => {}
 
