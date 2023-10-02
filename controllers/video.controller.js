@@ -5,6 +5,7 @@ const ApiError = require('../utils/ApiError');
 const fs = require("fs");
 const path = require("path");
 const amqp = require("amqplib")
+const { dB } = require('../models');
 require('dotenv');
 
 const getMovies = catchAsync(async (req, res) => {
@@ -74,6 +75,15 @@ const recordAndSave = catchAsync(async (req, res) => {
             return res.status(500).send(err);
           }
           console.log("reached here")
+          const movieLocation = `${process.env.BASE_URL}/recordings/${recordingId}`
+          const shareLink = `${process.env.BASE_URL}/share/${recordingId}`
+
+          dB.videos.create({
+            movieLocation,
+            shareLink,
+            uniqueel: recordingId,
+            isActive: true,
+          })
 
       console.log(`Recording saved at ${outputFilePath}`);
 
@@ -81,20 +91,20 @@ const recordAndSave = catchAsync(async (req, res) => {
       tempFilePaths.forEach((filePath) => fs.unlinkSync(`${tempDir}/${filePath}`));
 
       // Connect to RabbitMQ and send video for transcription
-    //   amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`).then((connection) => {
-    //     return connection.createChannel().then((channel) => {
-    //       const queue = 'video_transcription';
+      amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`).then((connection) => {
+        return connection.createChannel().then((channel) => {
+          const queue = 'video_transcription';
 
-    //       channel.assertQueue(queue, { durable: true });
-    //       channel.sendToQueue(queue, Buffer.from(outputFilePath)); // Send the file path
+          channel.assertQueue(queue, { durable: true });
+          channel.sendToQueue(queue, Buffer.from(outputFilePath)); // Send the file path
 
-    //       console.log('Sent video for transcription');
+          console.log('Sent video for transcription');
 
-    //       setTimeout(() => {
-    //         connection.close();
-    //       }, 500);
-    //     });
-    //   }).catch(console.warn);
+          setTimeout(() => {
+            connection.close();
+          }, 500);
+        });
+      }).catch(console.warn);
 
       res.sendStatus(200);
     });
@@ -112,6 +122,7 @@ const recordAndSave = catchAsync(async (req, res) => {
     });
     res.sendStatus(200);
   }
+  res.sendStatus(400)
 })
 
   const initializer = () => {}
