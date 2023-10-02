@@ -6,7 +6,8 @@ const { dB } = require('../models');
 
 
 
-let channel, queue = 'video_transcription'
+let channel
+let queue = 'video_transcription';
 (async function () {
     const connection = await amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`);
     channel = await connection.createChannel();
@@ -15,7 +16,7 @@ let channel, queue = 'video_transcription'
   })()
 
 
-  channel.consume(queue, async (msg) => {
+  channel?.consume(queue, async (msg) => {
     const videoPath = msg.content.toString();
   
     try {
