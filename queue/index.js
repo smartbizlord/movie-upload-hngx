@@ -33,3 +33,7 @@ let channel, queue = 'video_transcription'
   
     channel.ack(msg);
   })
+
+
+
+  console.log("queue active")
