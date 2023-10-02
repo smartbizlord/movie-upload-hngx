@@ -44,6 +44,8 @@ const recordAndSave = async (req, res) => {
     const recordingId = req.body.recordingId;
     const hasNextChunk = req.body.hasNextChunk;
 
+    // console.log(req.body, "request body")
+
     const tempDir = path.join(process.cwd() + "/temp")
     const recordingsDir = path.join(process.cwd() + "/public")
 
@@ -53,14 +55,20 @@ const recordAndSave = async (req, res) => {
   
     const tempFilePath = `${tempDir}/${recordingId}_${chunkIndex}.chunk`;
 
-    if (!hasNextChunk) {
+    if (hasNextChunk !== "true") {
       // No more chunks expected, send video for transcription
       const tempFilePaths = fs.readdirSync(tempDir).filter(file => file.startsWith(`${recordingId}_`));
-      const chunks = tempFilePaths.map(filePath => fs.readFileSync(`${tempDir}/${filePath}`));
+      const chunks = tempFilePaths.map(filePath => {
+        let fileCunkTran = fs.readFileSync(`${tempDir}/${filePath}`, "base64")
+        return Buffer.from(
+          fileCunkTran,
+          "base64",
+        )}
+      );
       const completeRecording = Buffer.concat(chunks);
 
       // Save the complete recording
-      const outputFilePath = `${recordingsDir}/${recordingId}.mp4`;
+      const outputFilePath = `${recordingsDir}/${recordingId}.webm`;
       fs.writeFile(outputFilePath, completeRecording, 'base64', (err) => {
         if (err) {
           return res.status(500).send(err);
