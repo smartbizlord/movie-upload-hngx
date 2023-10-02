@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/asyncly');
 const { movieService } = require('../services');
 const ApiError = require('../utils/ApiError');
-const fs = require("fs");
+const fs = require("fs/promises");
 const path = require("path");
 const amqp = require("amqplib")
 require('dotenv');
@@ -49,17 +49,15 @@ const recordAndSave = async (req, res) => {
     const tempDir = path.join(process.cwd() + "/temp")
     const recordingsDir = path.join(process.cwd() + "/public")
 
-    if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir);
-    }
+    
   
     const tempFilePath = `${tempDir}/${recordingId}_${chunkIndex}.chunk`;
 
     if (hasNextChunk !== "true") {
       // No more chunks expected, send video for transcription
-      const tempFilePaths = fs.readdirSync(tempDir).filter(file => file.startsWith(`${recordingId}_`));
-      const chunks = tempFilePaths.map(filePath => {
-        let fileCunkTran = fs.readFileSync(`${tempDir}/${filePath}`, "base64")
+      const tempFilePaths = await fs.readdir(tempDir).filter(file => file.startsWith(`${recordingId}_`));
+      const chunks = tempFilePaths.map(async(filePath) => {
+        let fileCunkTran = await fs.readFile(`${tempDir}/${filePath}`, "base64")
         return Buffer.from(
           fileCunkTran,
           "base64",
@@ -69,7 +67,7 @@ const recordAndSave = async (req, res) => {
 
       // Save the complete recording
       const outputFilePath = `${recordingsDir}/${recordingId}.webm`;
-      fs.writeFile(outputFilePath, completeRecording, 'base64', (err) => {
+      await fs.writeFile(outputFilePath, completeRecording, 'base64', (err) => {
         if (err) {
           return res.status(500).send(err);
         }
@@ -77,7 +75,7 @@ const recordAndSave = async (req, res) => {
         console.log(`Recording saved at ${outputFilePath}`);
 
         // Clean up temporary files
-        tempFilePaths.forEach(filePath => fs.unlinkSync(`${tempDir}/${filePath}`));
+        tempFilePaths.forEach(async(filePath) => await fs.unlink(`${tempDir}/${filePath}`));
 
         // Connect to RabbitMQ and send video for transcription
       //   amqp.connect(`amqp://${process.env.RABBITMQ_DEFAULT_USER}:${process.env.RABBITMQ_DEFAULT_PASS}@${process.env.RABBITMQ_HOST}`).then((connection) => {
@@ -143,8 +141,8 @@ const recordAndSave = async (req, res) => {
   
       if (!hasNextChunk) {
         // No more chunks expected, send video for transcription
-        const tempFilePaths = fs.readdirSync(tempDir).filter(file => file.startsWith(`${recordingId}_`));
-        const chunks = tempFilePaths.map(filePath => fs.readFileSync(`${tempDir}/${filePath}`));
+        const tempFilePaths = fs.readdir(tempDir).filter(file => file.startsWith(`${recordingId}_`));
+        const chunks = tempFilePaths.map(filePath => fs.readFile(`${tempDir}/${filePath}`));
         const completeRecording = Buffer.concat(chunks);
   
         // Save the complete recording
@@ -157,7 +155,7 @@ const recordAndSave = async (req, res) => {
           console.log(`Recording saved at ${outputFilePath}`);
   
           // Clean up temporary files
-          tempFilePaths.forEach(filePath => fs.unlinkSync(`${tempDir}/${filePath}`));
+          tempFilePaths.forEach(filePath => fs.unlink(`${tempDir}/${filePath}`));
   
           // Connect to RabbitMQ and send video for transcription
           amqp.connect('amqp://localhost').then((connection) => {
