@@ -55,6 +55,7 @@ const recordAndSave = async (req, res) => {
   
     fs.writeFile(tempFilePath, videoChunk, 'base64', (err) => {
       if (err) {
+        console.log(err, "there was a problem saving the chunk to disk")
         return new ApiError(httpStatus.BAD_GATEWAY, "Movie Upload failed");
       }
   
